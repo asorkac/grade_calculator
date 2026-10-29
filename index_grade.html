@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Final grade calculator</title>
+<style>
+:root {
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --ink: #15202b;
+  --muted: #566373;
+  --line: #d3dae3;
+  --soft: #e8ecf2;
+  --accent: #2848d0;
+  --on-accent: #ffffff;
+  --tint: #dde5ff;
+  --good: #1b7444;
+  --warn: #b3261e;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141b;
+    --surface: #171e27;
+    --ink: #e7ecf2;
+    --muted: #9aa7b6;
+    --line: #2b3644;
+    --soft: #1f2833;
+    --accent: #9fb3ff;
+    --on-accent: #0c1430;
+    --tint: #27346a;
+    --good: #7fd6a2;
+    --warn: #ff9d92;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141b;
+  --surface: #171e27;
+  --ink: #e7ecf2;
+  --muted: #9aa7b6;
+  --line: #2b3644;
+  --soft: #1f2833;
+  --accent: #9fb3ff;
+  --on-accent: #0c1430;
+  --tint: #27346a;
+  --good: #7fd6a2;
+  --warn: #ff9d92;
+  color-scheme: dark;
+}
+html { background: var(--bg); scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--sans); -webkit-text-size-adjust: 100%; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 28px 16px 120px; }
+header { max-width: 64ch; margin-bottom: 20px; }
+h1 { font: 600 clamp(28px, 5.5vw, 44px)/1.1 var(--serif); letter-spacing: -0.01em; margin: 0 0 12px; }
+.lead { color: var(--muted); font-size: 1.0625rem; margin: 0 0 14px; }
+.privacy { font-size: .92rem; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 12px; margin: 0; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); }
+.step { padding: 28px 0; border-top: 1px solid var(--line); min-width: 0; }
+h2 { font: 600 1.4rem/1.25 var(--serif); margin: 0 0 6px; }
+.sub { color: var(--muted); margin: 0; max-width: 60ch; }
+.muted { color: var(--muted); }
+
+.group { margin-top: 22px; }
+.group h3 { font: 600 1rem/1.3 var(--sans); margin: 0 0 2px; }
+.group .note { color: var(--muted); font-size: .9rem; margin: 0 0 10px; }
+.cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 12px 14px; }
+.cell label { display: block; font-size: .9rem; font-weight: 500; margin-bottom: 4px; }
+.field { display: flex; align-items: center; min-height: 44px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding-right: 12px; }
+.field:focus-within { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
+.field.bad { border-color: var(--warn); }
+.field input { flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: 16px; padding: 10px 4px 10px 12px; outline: none; font-variant-numeric: tabular-nums; }
+.field input::placeholder { color: var(--muted); opacity: .6; }
+.of { color: var(--muted); font-size: .9rem; white-space: nowrap; }
+.hint { font-size: .8rem; color: var(--warn); margin-top: 3px; }
+.hint:empty { display: none; }
+
+.select { min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; font: inherit; font-size: 16px; padding: 8px 10px; max-width: 100%; }
+.select:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font: 600 .95rem var(--sans); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); }
+
+.callout { margin-top: 22px; padding: 12px 14px; background: var(--soft); border-radius: 6px; }
+.callout p { margin: 0; }
+.callout p + p { margin-top: 4px; color: var(--muted); font-size: .9rem; }
+
+.ec-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.ec-row label { font-weight: 500; }
+
+.results { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: 8px; padding: 20px; margin: 28px 0 0; min-width: 0; }
+.ruler { display: grid; grid-template-columns: repeat(11, 1fr); gap: 2px; margin: 16px 0 6px; }
+.seg { position: relative; height: 52px; background: var(--soft); border-radius: 3px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.seg.in { background: var(--tint); color: var(--ink); }
+.mark { position: absolute; top: -6px; bottom: -6px; width: 4px; margin-left: -2px; background: var(--accent); border-radius: 2px; box-shadow: 0 0 0 2px var(--surface); }
+.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+.lg-label { font-size: .82rem; color: var(--muted); }
+.lg-letter { font: 600 1.7rem/1.15 var(--serif); }
+.lg-pct { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lg.proj .lg-letter { font-size: 2.2rem; color: var(--accent); }
+.lg.proj .lg-label { color: var(--ink); font-weight: 600; }
+.mini { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: .92rem; }
+.mini td { padding: 6px 0; border-top: 1px solid var(--line); }
+.mini td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.mini tr.total td { font-weight: 600; border-top: 2px solid var(--ink); }
+.notes { font-size: .85rem; color: var(--muted); margin-top: 12px; }
+.notes p { margin: 6px 0; }
+.warn { color: var(--warn); }
+.good { color: var(--good); }
+
+#target-out p { margin: 12px 0 0; max-width: 62ch; }
+#target-out strong { font-variant-numeric: tabular-nums; }
+.assume { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 18px; }
+.assume .field { width: 104px; }
+.target-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 18px; }
+.target-row label { font-weight: 500; }
+
+.tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 28px; margin-top: 18px; }
+.ref { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.ref th { text-align: left; font-weight: 600; padding: 6px 8px 6px 0; border-bottom: 2px solid var(--ink); }
+.ref td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.fine { font-size: .85rem; color: var(--muted); max-width: 62ch; margin: 14px 0 0; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); }
+.bar-text { min-width: 0; }
+.bar-label { font-size: .8rem; color: var(--muted); display: block; line-height: 1.2; }
+.bar-val { font: 600 1.15rem/1.3 var(--serif); font-variant-numeric: tabular-nums; }
+
+@media (min-width: 900px) {
+  .wrap { padding-bottom: 64px; }
+  .layout { grid-template-columns: minmax(0, 1fr) 380px; column-gap: 44px; }
+  .layout > .step { grid-column: 1; }
+  .results { grid-column: 2; grid-row: 1 / span 4; align-self: start; position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); margin-top: 28px; max-height: calc(100vh - 32px); overflow: auto; }
+  .bar { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Where could you finish this course?</h1>
+    <p class="lead">Enter the grades you have, try scores for the work still to come, and see the range of final grades you could end up with. Use it to help you decide whether to stay in the class.</p>
+    <p class="privacy">Everything runs in your browser. Nothing you type is saved or sent anywhere, and it all clears when you close or refresh this page.</p>
+  </header>
+
+  <main class="layout">
+    <section class="step" aria-labelledby="h-step1">
+      <h2 id="h-step1">Step 1: Enter the grades you’ve received</h2>
+      <p class="sub">Type your score in points for each item that has already been graded. Check them against Canvas.</p>
+      <div id="done-groups"></div>
+      <div class="callout" id="s1sum" aria-live="polite"></div>
+    </section>
+
+    <section class="step" aria-labelledby="h-step2">
+      <h2 id="h-step2">Step 2: Try scores for the work still to come</h2>
+      <p class="sub">Fill in the points you think you could earn on the work that’s left.</p>
+
+      <div id="pending-groups"></div>
+
+      <div class="group">
+        <h3>Attendance and participation</h3>
+        <p class="note">Worth 10% of your final grade. Enter the percent you expect to finish with. It starts at 100%, so change it if yours will be lower.</p>
+        <div class="cells">
+          <div class="cell">
+            <label for="in-att">Expected final score</label>
+            <div class="field"><input id="in-att" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" value="100"><span class="of">%</span></div>
+            <div class="hint" id="hint-att" role="status"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Extra credit</h3>
+        <p class="note">There are 5 extra credit assignments, worth 2% of your final grade each for completing them. Your total can’t go above 100%.</p>
+        <div class="ec-row">
+          <label for="ec">How many do you plan to complete?</label>
+          <select id="ec" class="select">
+            <option value="0">None</option>
+            <option value="1">1 (+2%)</option>
+            <option value="2">2 (+4%)</option>
+            <option value="3">3 (+6%)</option>
+            <option value="4">4 (+8%)</option>
+            <option value="5">All 5 (+10%)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="results" id="results" aria-labelledby="h-res">
+      <h2 id="h-res">Where you could finish</h2>
+      <div id="res-body"></div>
+    </section>
+
+    <section class="step" aria-labelledby="h-step3">
+      <h2 id="h-step3">Step 3: Find out what you need</h2>
+      <p class="sub">Pick the grade you’re aiming for. This uses your Step 1 grades, your attendance estimate and your extra credit plan. It ignores the boxes in Step 2.</p>
+      <div class="target-row">
+        <label for="target">I’m aiming for at least</label>
+        <select id="target" class="select">
+          <option value="">Choose a grade</option>
+        </select>
+      </div>
+      <div id="target-out" aria-live="polite"></div>
+      <div class="assume" id="assume-row">
+        <label for="qa">If I score</label>
+        <div class="field"><input id="qa" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" value="90"><span class="of">%</span></div>
+        <span>on the remaining quizzes and PeerWise assignments, what do I need on the exams?</span>
+      </div>
+      <div id="target-out2" aria-live="polite"></div>
+    </section>
+
+    <section class="step" aria-labelledby="h-ref">
+      <h2 id="h-ref">Grading scale and weights</h2>
+      <div class="tables">
+        <table class="ref" id="scale-table">
+          <caption class="sr">Letter grade scale</caption>
+          <thead><tr><th scope="col">Grade</th><th scope="col">Percent</th><th scope="col">GPA</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <table class="ref">
+          <caption class="sr">How the final grade is weighted</caption>
+          <thead><tr><th scope="col">Item</th><th scope="col">Weight</th></tr></thead>
+          <tbody>
+            <tr><td>10 quizzes (15 points each)</td><td>1.5% each, 15% total</td></tr>
+            <tr><td>3 PeerWise assignments (50 points each)</td><td>5% each, 15% total</td></tr>
+            <tr><td>Attendance and participation</td><td>10%</td></tr>
+            <tr><td>3 exams (100 points each)</td><td>20% each, 60% total</td></tr>
+            <tr><td>5 extra credit assignments</td><td>+2% each, up to +10%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine">This is an estimate to help you plan. Your grades in Canvas and the course syllabus are the official record.</p>
+      <p style="margin-top:18px"><button type="button" class="btn ghost" id="reset">Clear everything</button></p>
+    </section>
+  </main>
+</div>
+
+<div class="bar" id="bar">
+  <div class="bar-text"><span class="bar-label" id="bar-label">Your range</span><span class="bar-val" id="bar-val">Enter your grades</span></div>
+  <button type="button" class="btn" id="bar-btn">See details</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var ITEMS = [], i;
+  for (i = 1; i <= 10; i++) ITEMS.push({ id: 'q' + i, cat: 'quiz', label: 'Quiz ' + i, pts: 15, w: 1.5, done: i <= 4 });
+  for (i = 1; i <= 3; i++) ITEMS.push({ id: 'p' + i, cat: 'pw', label: 'PeerWise ' + i, pts: 50, w: 5, done: i === 1 });
+  for (i = 1; i <= 3; i++) ITEMS.push({ id: 'e' + i, cat: 'exam', label: 'Exam ' + i, pts: 100, w: 20, done: i === 1 });
+
+  var CATS = {
+    quiz: { title: 'Quizzes', note: 'Scored out of 15 points. Each is worth 1.5% of your final grade.' },
+    pw:   { title: 'PeerWise assignments', note: 'Scored out of 50 points. Each is worth 5% of your final grade.' },
+    exam: { title: 'Exams', note: 'Scored out of 100 points. Each is worth 20% of your final grade.' }
+  };
+  var ATT_W = 10, EC_EACH = 2, EC_MAX = 5;
+
+  // gt = the highest score that still falls in the band below (anything above it earns this grade)
+  var SCALE = [
+    { l: 'A',  gt: 92.99, range: '93% and above',          gpa: '4.0' },
+    { l: 'A-', gt: 89.99, range: 'Between 90% and 92.99%', gpa: '3.7' },
+    { l: 'B+', gt: 85.99, range: 'Between 86% and 89.99%', gpa: '3.3' },
+    { l: 'B',  gt: 82.99, range: 'Between 83% and 85.99%', gpa: '3.0' },
+    { l: 'B-', gt: 79.99, range: 'Between 80% and 82.99%', gpa: '2.7' },
+    { l: 'C+', gt: 76.99, range: 'Between 77% and 79.99%', gpa: '2.3' },
+    { l: 'C',  gt: 73.99, range: 'Between 74% and 76.99%', gpa: '2.0' },
+    { l: 'C-', gt: 69.99, range: 'Between 70% and 73.99%', gpa: '1.7' },
+    { l: 'D+', gt: 66.99, range: 'Between 67% and 69.99%', gpa: '1.3' },
+    { l: 'D',  gt: 63.99, range: 'Between 64% and 66.99%', gpa: '1.0' },
+    { l: 'F',  gt: -1,    range: 'Below 64%',              gpa: '0' }
+  ];
+  // Ruler cells run from F (left) to A (right)
+  var BOUNDS = [
+    { l: 'F', lo: 0, hi: 64 }, { l: 'D', lo: 64, hi: 67 }, { l: 'D+', lo: 67, hi: 70 },
+    { l: 'C-', lo: 70, hi: 74 }, { l: 'C', lo: 74, hi: 77 }, { l: 'C+', lo: 77, hi: 80 },
+    { l: 'B-', lo: 80, hi: 83 }, { l: 'B', lo: 83, hi: 86 }, { l: 'B+', lo: 86, hi: 90 },
+    { l: 'A-', lo: 90, hi: 93 }, { l: 'A', lo: 93, hi: 100 }
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  function round4(x) { return Math.round(x * 10000) / 10000; }
+  function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+  function letterFor(p) {
+    var q = round4(p);
+    for (var k = 0; k < SCALE.length; k++) { if (q > SCALE[k].gt) return SCALE[k]; }
+    return SCALE[SCALE.length - 1];
+  }
+  function segIdx(p) { return 10 - SCALE.indexOf(letterFor(p)); }
+  function fmt(p) {
+    var q = round4(p), s = q.toFixed(2);
+    if (letterFor(Number(s)).l !== letterFor(q).l) s = String(parseFloat(q.toFixed(4)));
+    return s;
+  }
+  function art(l) { return l.charAt(0) === 'A' ? 'an ' : 'a '; }
+  function up1(x) { return Math.max(0, Math.ceil(x * 10 - 0.01) / 10).toFixed(1); }
+  function parseNum(v) {
+    v = String(v == null ? '' : v).trim().replace(',', '.');
+    if (v === '' || !/^-?(\d+\.?\d*|\.\d+)$/.test(v)) return null;
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+  function readNum(el, max) {
+    var raw = el.value, n = parseNum(raw), st = 'ok';
+    if (n === null) st = raw.trim() === '' ? 'blank' : 'bad';
+    else if (n < 0) { n = 0; st = 'low'; }
+    else if (n > max) { n = max; st = 'high'; }
+    return { n: n, st: st };
+  }
+  function showHint(el, hintEl, r, max) {
+    var msg = '';
+    if (r.st === 'bad') msg = 'Enter a number.';
+    else if (r.st === 'low') msg = 'Scores can’t be negative.';
+    else if (r.st === 'high') msg = 'The most you can enter is ' + max + '.';
+    hintEl.textContent = msg;
+    el.parentNode.classList.toggle('bad', msg !== '');
+    el.setAttribute('aria-invalid', msg !== '' ? 'true' : 'false');
+  }
+
+  // ---- Build the input groups and tables ----
+  function buildGroups(container, done) {
+    ['quiz', 'pw', 'exam'].forEach(function (cat) {
+      var items = ITEMS.filter(function (it) { return it.cat === cat && it.done === done; });
+      if (!items.length) return;
+      var g = document.createElement('div');
+      g.className = 'group';
+      var html = '<h3>' + CATS[cat].title + '</h3><p class="note">' + CATS[cat].note + '</p><div class="cells">';
+      items.forEach(function (it) {
+        html += '<div class="cell"><label for="in-' + it.id + '">' + it.label + '</label>' +
+          '<div class="field"><input id="in-' + it.id + '" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="0">' +
+          '<span class="of">/ ' + it.pts + '</span></div><div class="hint" id="hint-' + it.id + '" role="status"></div></div>';
+      });
+      html += '</div>';
+      g.innerHTML = html;
+      container.appendChild(g);
+    });
+  }
+  buildGroups($('done-groups'), true);
+  buildGroups($('pending-groups'), false);
+
+  var tsel = $('target');
+  SCALE.slice(0, 10).forEach(function (s, k) {
+    var o = document.createElement('option');
+    o.value = String(k);
+    o.textContent = s.l + ' (' + s.range.replace('Between ', '').replace(' and ', ' to ') + ')';
+    tsel.appendChild(o);
+  });
+  var tb = document.querySelector('#scale-table tbody');
+  SCALE.forEach(function (s) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + s.l + '</td><td>' + s.range + '</td><td>' + s.gpa + '</td>';
+    tb.appendChild(tr);
+  });
+
+  // ---- Ruler ----
+  function rulerHTML() {
+    var h = '<div class="ruler" id="ruler" role="img" aria-label="">';
+    BOUNDS.forEach(function (b) { h += '<div class="seg"><span aria-hidden="true">' + b.l + '</span></div>'; });
+    return h + '</div>';
+  }
+  var mark = document.createElement('div');
+  mark.className = 'mark';
+
+  function setRuler(loP, hiP, prP, label) {
+    var segs = document.querySelectorAll('#ruler .seg');
+    var lo = loP === null ? -1 : segIdx(loP), hi = hiP === null ? -1 : segIdx(hiP);
+    for (var k = 0; k < segs.length; k++) segs[k].classList.toggle('in', lo >= 0 && k >= lo && k <= hi);
+    if (prP !== null) {
+      var kk = segIdx(prP), b = BOUNDS[kk];
+      var fr = clamp((prP - b.lo) / (b.hi - b.lo), 0.12, 0.88);
+      segs[kk].appendChild(mark);
+      mark.style.left = (fr * 100) + '%';
+    } else if (mark.parentNode) {
+      mark.parentNode.removeChild(mark);
+    }
+    $('ruler').setAttribute('aria-label', label);
+  }
+
+  // ---- Main calculation ----
+  function update() {
+    var earnedDone = 0, weightEntered = 0, missingDone = 0, doneCount = 0, doneWeight = 0;
+    var cat = { quiz: 0, pw: 0, exam: 0 };
+    var pendingW = 0, pendingQPW = 0, pendingExamW = 0, filled = 0, blankPending = 0, pendingCount = 0;
+    var examLabels = [];
+
+    ITEMS.forEach(function (it) {
+      var el = $('in-' + it.id), r = readNum(el, it.pts);
+      showHint(el, $('hint-' + it.id), r, it.pts);
+      if (it.done) {
+        doneCount++; doneWeight += it.w;
+        if (r.n === null) missingDone++;
+        else { var c = r.n / it.pts * it.w; earnedDone += c; weightEntered += it.w; cat[it.cat] += c; }
+      } else {
+        pendingCount++; pendingW += it.w;
+        if (it.cat === 'exam') { pendingExamW += it.w; examLabels.push(it.label); } else pendingQPW += it.w;
+        if (r.n === null) blankPending++;
+        else { cat[it.cat] += r.n / it.pts * it.w; filled++; }
+      }
+    });
+
+    var attEl = $('in-att'), attR = readNum(attEl, 100);
+    showHint(attEl, $('hint-att'), attR, 100);
+    var att = attR.n === null ? 0 : attR.n;
+    var attC = att / 100 * ATT_W;
+    var ecN = Number($('ec').value) || 0;
+    var ecC = ecN * EC_EACH;
+
+    var hasAny = doneCount - missingDone > 0;
+    var floorP = Math.min(100, earnedDone + attC + ecC);
+    var ceilP = Math.min(100, earnedDone + pendingW + attC + ecC);
+    var projBase = cat.quiz + cat.pw + cat.exam + attC;
+    var projP = Math.min(100, projBase + ecC);
+    var hasProj = hasAny && filled > 0;
+
+    // Step 1 summary
+    var s1 = $('s1sum');
+    if (!hasAny) {
+      s1.innerHTML = '<p class="muted">Enter at least one grade to see how you’re doing on completed work.</p>';
+    } else {
+      var sofar = earnedDone / weightEntered * 100;
+      var h = '<p>Your grade on completed work: <strong>' + fmt(sofar) + '%</strong> (' + letterFor(sofar).l + ')</p>' +
+              '<p>Completed work is ' + doneWeight + '% of your final grade, so this will change as the rest comes in.</p>';
+      if (missingDone > 0) h += '<p class="warn">' + missingDone + ' of the ' + doneCount + ' completed items ' + (missingDone === 1 ? 'is' : 'are') + ' still empty, so ' + (missingDone === 1 ? 'it’s' : 'they’re') + ' counted as 0 below.</p>';
+      s1.innerHTML = h;
+    }
+
+    // Results panel
+    var body = $('res-body'), barLabel = $('bar-label'), barVal = $('bar-val');
+    var existingRuler = $('ruler');
+    if (!existingRuler) { body.innerHTML = rulerHTML() + '<div id="res-rest"></div>'; }
+    var rest = $('res-rest');
+    if (!hasAny) {
+      setRuler(null, null, null, 'Grade scale from F to A. Enter your grades to see your range.');
+      rest.innerHTML = '<p class="muted">Enter your grades in Step 1 to see the range of grades you could finish with.</p>';
+      barLabel.textContent = 'Your range'; barVal.textContent = 'Enter your grades';
+    } else {
+      var lo = letterFor(floorP), hi = letterFor(ceilP), pr = hasProj ? letterFor(projP) : null;
+      var label = 'Lowest possible ' + lo.l + ' at ' + fmt(floorP) + ' percent. Highest possible ' + hi.l + ' at ' + fmt(ceilP) + ' percent.' +
+                  (pr ? ' Projected ' + pr.l + ' at ' + fmt(projP) + ' percent.' : '');
+      setRuler(floorP, ceilP, hasProj ? projP : null, label);
+      var h2 = '<div class="legend">' +
+        '<div class="lg"><div class="lg-label">Lowest</div><div class="lg-letter">' + lo.l + '</div><div class="lg-pct">' + fmt(floorP) + '%</div></div>' +
+        '<div class="lg proj"><div class="lg-label">Projected</div><div class="lg-letter">' + (pr ? pr.l : '–') + '</div><div class="lg-pct">' + (pr ? fmt(projP) + '%' : 'Fill in Step 2') + '</div></div>' +
+        '<div class="lg"><div class="lg-label">Highest</div><div class="lg-letter">' + hi.l + '</div><div class="lg-pct">' + fmt(ceilP) + '%</div></div></div>';
+      if (hasProj) {
+        h2 += '<table class="mini"><caption class="sr">Where your projected grade comes from</caption><tbody>' +
+          '<tr><td>Quizzes</td><td>' + cat.quiz.toFixed(2) + ' of 15</td></tr>' +
+          '<tr><td>PeerWise</td><td>' + cat.pw.toFixed(2) + ' of 15</td></tr>' +
+          '<tr><td>Attendance and participation</td><td>' + attC.toFixed(2) + ' of 10</td></tr>' +
+          '<tr><td>Exams</td><td>' + cat.exam.toFixed(2) + ' of 60</td></tr>' +
+          '<tr><td>Extra credit</td><td>+' + ecC.toFixed(2) + ' of 10</td></tr>' +
+          '<tr class="total"><td>Projected total</td><td>' + fmt(projP) + '%</td></tr></tbody></table>';
+      }
+      h2 += '<div class="notes">';
+      if (hasProj && projBase + ecC > 100) h2 += '<p>Your total is capped at 100%.</p>';
+      if (hasProj && blankPending > 0) h2 += '<p class="warn">' + blankPending + ' of the ' + pendingCount + ' boxes in Step 2 are empty and count as 0 in the projection.</p>';
+      if (!hasProj) h2 += '<p>Fill in the boxes in Step 2 to see a projected grade.</p>';
+      if (missingDone > 0) h2 += '<p class="warn">Completed grades you haven’t entered in Step 1 count as 0.</p>';
+      h2 += '<p>Lowest assumes 0 on every remaining quiz, PeerWise assignment and exam. Highest assumes full points. Both use your attendance estimate and extra credit plan.</p></div>';
+      rest.innerHTML = h2;
+      if (pr) { barLabel.textContent = 'Projected'; barVal.textContent = pr.l + ' · ' + fmt(projP) + '%'; }
+      else { barLabel.textContent = 'Your range'; barVal.textContent = lo.l + ' to ' + hi.l; }
+    }
+
+    // Step 3
+    targetOut({
+      hasAny: hasAny, earnedDone: earnedDone, attC: attC, ecC: ecC, ecN: ecN,
+      pendingW: pendingW, pendingQPW: pendingQPW, pendingExamW: pendingExamW, examLabels: examLabels, missingDone: missingDone
+    });
+  }
+
+  function targetOut(c) {
+    var out = $('target-out'), out2 = $('target-out2'), idx = $('target').value;
+    out2.innerHTML = '';
+    $('assume-row').style.display = idx === '' ? 'none' : '';
+    if (idx === '') { out.innerHTML = '<p class="muted">Choose a grade to see what you need on the remaining work.</p>'; return; }
+    if (!c.hasAny) { out.innerHTML = '<p class="muted">Enter your grades in Step 1 first.</p>'; return; }
+
+    var s = SCALE[Number(idx)], L = s.gt;
+    var known = c.earnedDone + c.attC + c.ecC, pw = c.pendingW;
+    var html = '';
+    if (round4(known) > L) {
+      html = '<p class="good"><strong>You already have this.</strong> Even with 0% on everything that’s left, you’d finish with at least ' + art(s.l) + s.l + ', based on the numbers you entered.</p>';
+    } else if (round4(Math.min(100, known + pw)) <= L) {
+      var best = Math.min(100, known + pw);
+      html = '<p class="warn"><strong>' + (art(s.l) === 'an ' ? 'An ' : 'A ') + s.l + ' isn’t reachable with these numbers.</strong> Even full points on everything that’s left would give you ' + fmt(best) + '% (' + letterFor(best).l + ').</p>';
+      if (c.ecN < EC_MAX) {
+        var alt = Math.min(100, known - c.ecC + EC_MAX * EC_EACH + pw);
+        if (round4(alt) > L) html += '<p>It would be possible if you completed all 5 extra credit assignments.</p>';
+      }
+    } else {
+      var need = (L - known) / pw * 100;
+      html = '<p>You need an average of at least <strong>' + up1(need) + '%</strong> on all the remaining quizzes, PeerWise assignments and exams to finish with ' + art(s.l) + s.l + ' or better.</p>' +
+        '<p>That’s about ' + up1(need * 15 / 100) + ' out of 15 on each quiz, ' + up1(need * 50 / 100) + ' out of 50 on each PeerWise assignment and ' + up1(need) + ' out of 100 on each exam.</p>';
+    }
+    if (c.missingDone > 0) html += '<p class="warn">' + c.missingDone + ' completed ' + (c.missingDone === 1 ? 'grade is' : 'grades are') + ' still empty in Step 1 and counted as 0.</p>';
+    out.innerHTML = html;
+
+    // Exams-only scenario
+    var q = parseNum($('qa').value), exW = c.pendingExamW;
+    var names = c.examLabels.join(' and ');
+    if (exW <= 0) return;
+    if (q === null || q < 0 || q > 100) { out2.innerHTML = '<p class="warn">Enter a percent from 0 to 100 for the quizzes and PeerWise assignments.</p>'; return; }
+    var base = known + q / 100 * c.pendingQPW, h2;
+    if (round4(base) > L) {
+      h2 = '<p><strong>You’d already have it.</strong> With ' + q + '% on the remaining quizzes and PeerWise assignments, you’d reach ' + art(s.l) + s.l + ' even with 0% on ' + names + '.</p>';
+    } else if (round4(Math.min(100, base + exW)) <= L) {
+      h2 = '<p class="warn"><strong>Not reachable that way.</strong> With ' + q + '% on the remaining quizzes and PeerWise assignments, even 100% on ' + names + ' wouldn’t get you to ' + art(s.l) + s.l + '.</p>';
+    } else {
+      var need2 = (L - base) / exW * 100;
+      h2 = '<p>With ' + q + '% on the remaining quizzes and PeerWise assignments, you’d need an average of at least <strong>' + up1(need2) + '%</strong> on ' + names + '.</p>';
+    }
+    out2.innerHTML = h2;
+  }
+
+  // ---- Events ----
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'INPUT') update();
+  });
+  $('ec').addEventListener('change', update);
+  $('target').addEventListener('change', update);
+
+  $('reset').addEventListener('click', function () {
+    ITEMS.forEach(function (it) { $('in-' + it.id).value = ''; });
+    $('in-att').value = '100';
+    $('ec').value = '0';
+    $('qa').value = '90';
+    $('target').value = '';
+    update();
+    window.scrollTo(0, 0);
+  });
+  $('bar-btn').addEventListener('click', function () {
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('results').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>
